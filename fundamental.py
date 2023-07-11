@@ -164,10 +164,43 @@ def levmarq(kpts1, kpts2):
     def func(x):
         return x[0]**2 + x[1]**2
     
+    # here should be cost function of type:
+    # dist(x, l_e) + dist(x', l_e')
+    # where x, x' - 2d feature coords
+    # l_e, l_e' - epipolar lines(l_e' = F * x;   l_e = F^T *x')
+    # here F - parameter of cost function, which should be optimized 
+    #         cost: 3.6198104017824025e-05 
+    def cost(F):
+
+        total_loss = 0
+        # for i in range(kpts1_np.shape[0]):
+        for i in range(2):
+            kpts1_h = np.array([kpts1_np[i][0],kpts1_np[i][1],1.0])
+            kpts2_h = np.array([kpts2_np[i][0],kpts2_np[i][1],1.0])
+        
+
+            product1 = kpts1_h[0]*F[0]*kpts2_h[0] + kpts1_h[1]*F[3]*kpts2_h[0] + kpts1_h[2]*F[6]*kpts2_h[0]
+            product2 = kpts1_h[0]*F[1]*kpts2_h[1] + kpts1_h[1]*F[4]*kpts2_h[1] + kpts1_h[2]*F[7]*kpts2_h[1]
+            product3 = kpts1_h[0]*F[2]*kpts2_h[2] + kpts1_h[1]*F[5]*kpts2_h[2] + kpts1_h[2]*F[8]*kpts2_h[2]
+
+            total_loss += product1+product2+product3
     
+        return total_loss
+
     
-    x0 = np.array([10.0,10.0])
-    res = least_squares(lambda x: func(x), x0)
+    kpts1_np = []
+    kpts2_np = []
+    for i in range(len(kpts1)):
+        kpts1_np.append((int(kpts1[i].pt[0]),int(kpts1[i].pt[1])))
+        kpts2_np.append((int(kpts2[i].pt[0]),int(kpts2[i].pt[1])))
+    kpts1_np = np.array(kpts1_np)
+    kpts2_np = np.array(kpts2_np)
+    F0, mask_cv2 = cv2.findFundamentalMat(kpts1_np,kpts2_np, cv2.FM_7POINT)  
+    print(F0.shape)
+
+    F0 = np.ravel(F0[:3,:3])
+    print(F0)
+    res = least_squares(lambda x: cost(x), F0)
 
     print(res)
 
