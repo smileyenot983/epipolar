@@ -3,35 +3,47 @@ import cv2
 
 from scipy.optimize import least_squares
 
+# calculates error = x1^T*F*x2
+def calc_err(kpts1, kpts2, F):
+    total_err = 0.0
+    for i in range(kpts1.shape[0]):
+        kp1 = np.array([kpts1[i,0], kpts1[i,1], 1.0])
+        kp2 = np.array([kpts2[i,0], kpts2[i,1], 1.0])
+        err = np.linalg.multi_dot([kp1.T,F,kp2])
+        total_err += err
+
+    return total_err
+
+
 # estimating fundamental matrix with 2 ways:
 # 7 point + solve quadratic polynom
 # 8 points
 
 # at least 8 matched keypoint positions
 # x^TFx' = 0 => Af = 0
+# TODO: 1. add feature coords normalization
 def eight_point(kpts1, kpts2):
-    A = np.zeros((len(kpts1),9))
+    assert(kpts1.shape[0]==kpts2.shape[0]==8)
+    A = np.zeros((kpts1.shape[0],9))
 
     for i in range(A.shape[0]):
-        A[i][0] = kpts1[i].pt[0] * kpts2[i].pt[0]
-        A[i][1] = kpts1[i].pt[1] * kpts2[i].pt[0]
-        A[i][2] = kpts2[i].pt[0]
-        A[i][3] = kpts1[i].pt[0] * kpts2[i].pt[1]
-        A[i][4] = kpts1[i].pt[1] * kpts2[i].pt[1]
-        A[i][5] = kpts2[i].pt[1]
-        A[i][6] = kpts1[i].pt[0]
-        A[i][7] = kpts1[i].pt[1]
+        A[i][0] = kpts1[i][0] * kpts2[i][0]
+        A[i][1] = kpts1[i][1] * kpts2[i][0]
+        A[i][2] = kpts2[i][0]
+        A[i][3] = kpts1[i][0] * kpts2[i][1]
+        A[i][4] = kpts1[i][1] * kpts2[i][1]
+        A[i][5] = kpts2[i][1]
+        A[i][6] = kpts1[i][0]
+        A[i][7] = kpts1[i][1]
         A[i][8] = 1.0
     
     # find nullspace to get solution for Af = 0
     # u - [row_space, left null_space]
-    # v - [column_space, null_space]
-    
+    # v - [column_space, null_space]    
     u,s,vt = np.linalg.svd(A, full_matrices=True)
     
     # only 1 vector in nullspace
     null_vec = vt.T[:,8]
-
     null_mat = null_vec.reshape((3,3))
 
     # enforcing constraint on third singular value being equal to 0
@@ -43,52 +55,26 @@ def eight_point(kpts1, kpts2):
     # up-to-scale, dividing by last element to make it equal to 1
     fundamental /= fundamental[2,2]
 
-    print(f"fundamental(my) : {fundamental}")
-
-    kpts1_np = []
-    kpts2_np = []
-    for i in range(len(kpts1)):
-        kpts1_np.append((int(kpts1[i].pt[0]),int(kpts1[i].pt[1])))
-        kpts2_np.append((int(kpts2[i].pt[0]),int(kpts2[i].pt[1])))
-    kpts1_np = np.array(kpts1_np)
-    kpts2_np = np.array(kpts2_np)
-
-    print(f"kpts1_np.shape: {kpts1_np.shape}")
-
-    fundamental_cv2, mask_cv2 = cv2.findFundamentalMat(kpts1_np,kpts2_np, cv2.FM_7POINT)    
-    print(f"fundamental_cv2: {fundamental_cv2}")
-
-
-    for i in range(8):
-        # checking the solution with x^T * F * x' = 0 condition
-        x1 = np.array([kpts1_np[i,0], kpts1_np[i,1], 1.0])
-        x2 = np.array([kpts2_np[i,0], kpts2_np[i,1], 1.0])
-
-        product_my = np.linalg.multi_dot([x1.T, fundamental, x2])
-        product_cv = np.linalg.multi_dot([x1.T, fundamental_cv2, x2])
-        print(f"product_my: {product_my}")
-        print(f"product_cv: {product_cv}")
-
+    return fundamental
 
 def seven_point(kpts1, kpts2):
-
-    assert(len(kpts1)==len(kpts2)==7)
+    assert(kpts1.shape[0]==kpts2.shape[0]==7)
+    # assert(len(kpts1)==len(kpts2)==7)
     A = np.zeros((7,9))
 
     for i in range(A.shape[0]):
-        A[i][0] = kpts1[i].pt[0] * kpts2[i].pt[0]
-        A[i][1] = kpts1[i].pt[1] * kpts2[i].pt[0]
-        A[i][2] = kpts2[i].pt[0]
-        A[i][3] = kpts1[i].pt[0] * kpts2[i].pt[1]
-        A[i][4] = kpts1[i].pt[1] * kpts2[i].pt[1]
-        A[i][5] = kpts2[i].pt[1]
-        A[i][6] = kpts1[i].pt[0]
-        A[i][7] = kpts1[i].pt[1]
+        A[i][0] = kpts1[i][0] * kpts2[i][0]
+        A[i][1] = kpts1[i][1] * kpts2[i][0]
+        A[i][2] = kpts2[i][0]
+        A[i][3] = kpts1[i][0] * kpts2[i][1]
+        A[i][4] = kpts1[i][1] * kpts2[i][1]
+        A[i][5] = kpts2[i][1]
+        A[i][6] = kpts1[i][0]
+        A[i][7] = kpts1[i][1]
         A[i][8] = 1.0
 
     u,s,vt = np.linalg.svd(A, full_matrices=True)
 
-    print(f"s: {s}")
     # 2 vecs in nullspace
     null_vec1 = vt.T[:,8]
     null_vec2 = vt.T[:,7]
@@ -117,7 +103,7 @@ def seven_point(kpts1, kpts2):
     q = null_mat2[2,1]
     r = null_mat2[2,2]
 
-    # here write the result of det(f_1 + \lambda*f_2)=0 -> as a result there is a cubic polynomial
+    # here write the result of  constrant = det(f_1 + \lambda*f_2)=0 -> as a result there is a cubic polynomial
     coeffs =[
         a*e*i + b*f*g + c*d*h - a*f*h - b*d*i - c*e*g,
         a*e*r + a*i*n + b*f*p + b*g*o + c*d*q + c*h*m + d*h*l + e*i*j + f*g*k - 
@@ -127,43 +113,27 @@ def seven_point(kpts1, kpts2):
         j*n*r + k*o*p + l*m*q - j*o*q - k*m*r - l*n*p
     ]
 
+    # finding roots of polynomial  A*x^3 + B*x^2 + C*x + D
+    # cubic polynomial -> 1 or 3 solutions
     roots = np.roots([coeffs[3],coeffs[2],coeffs[1],coeffs[0]])
-    print(f"roots: {roots}")
 
-    kpts1_np = []
-    kpts2_np = []
-    for i in range(len(kpts1)):
-        kpts1_np.append((int(kpts1[i].pt[0]),int(kpts1[i].pt[1])))
-        kpts2_np.append((int(kpts2[i].pt[0]),int(kpts2[i].pt[1])))
-    kpts1_np = np.array(kpts1_np)
-    kpts2_np = np.array(kpts2_np)
+    # in order to choose best root we calc error and choose solution which minimizes this error
+    fundamental_best = None
+    err_best = None
+    for root in roots:
+        fundamental_i = null_mat1 + root * null_mat2
+        err_i = calc_err(kpts1,kpts2,fundamental_i)
 
+        if(err_best == None or err_i < err_best):
+            err_best = err_i
+            fundamental_best = fundamental_i
 
-    fundamental_cv2, mask_cv2 = cv2.findFundamentalMat(kpts1_np,kpts2_np, cv2.FM_7POINT)  
+    return fundamental_best
 
-    print(f"fundamental_cv2.shape: {fundamental_cv2.shape}")
-    for i in range(int(fundamental_cv2.shape[0]/3)):
-        fundamental_cv2_i = fundamental_cv2[3*i:3*(i+1),:]
-        print(f"fundamental_cv2 i: {i} f: {fundamental_cv2_i}")
-
-    # check determinant=0 and x^T*F*x'=0        product_my = np.linalg.multi_dot([x1.T, fundamental, x2])
-    for l in roots:
-        fundamental = null_mat1 + l*null_mat2
-        det = np.linalg.det(fundamental)
-        print(f"l: {l} det: {det} fundamental: {fundamental}")
-        for i in range(7):
-            # checking the solution with x^T * F * x' = 0 condition
-            x1 = np.array([kpts1_np[i,0], kpts1_np[i,1], 1.0])
-            x2 = np.array([kpts2_np[i,0], kpts2_np[i,1], 1.0])
-
-            product_my = np.linalg.multi_dot([x1.T, fundamental, x2])
-            print(f"product_my: {product_my}")
             
 def levmarq(kpts1, kpts2):
-
-    def func(x):
-        return x[0]**2 + x[1]**2
-    
+    assert(kpts1.shape[0] == kpts2.shape[0] )
+    assert(kpts1.shape[0]>=7)
     # here should be cost function of type:
     # dist(x, l_e) + dist(x', l_e')
     # where x, x' - 2d feature coords
@@ -173,12 +143,10 @@ def levmarq(kpts1, kpts2):
     def cost(F):
 
         total_loss = 0
-        # for i in range(kpts1_np.shape[0]):
-        for i in range(2):
-            kpts1_h = np.array([kpts1_np[i][0],kpts1_np[i][1],1.0])
-            kpts2_h = np.array([kpts2_np[i][0],kpts2_np[i][1],1.0])
+        for i in range(kpts1.shape[0]):
+            kpts1_h = np.array([kpts1[i,0],kpts1[i,1],1.0])
+            kpts2_h = np.array([kpts2[i,0],kpts2[i,1],1.0])
         
-
             product1 = kpts1_h[0]*F[0]*kpts2_h[0] + kpts1_h[1]*F[3]*kpts2_h[0] + kpts1_h[2]*F[6]*kpts2_h[0]
             product2 = kpts1_h[0]*F[1]*kpts2_h[1] + kpts1_h[1]*F[4]*kpts2_h[1] + kpts1_h[2]*F[7]*kpts2_h[1]
             product3 = kpts1_h[0]*F[2]*kpts2_h[2] + kpts1_h[1]*F[5]*kpts2_h[2] + kpts1_h[2]*F[8]*kpts2_h[2]
@@ -187,21 +155,15 @@ def levmarq(kpts1, kpts2):
     
         return total_loss
 
-    
-    kpts1_np = []
-    kpts2_np = []
-    for i in range(len(kpts1)):
-        kpts1_np.append((int(kpts1[i].pt[0]),int(kpts1[i].pt[1])))
-        kpts2_np.append((int(kpts2[i].pt[0]),int(kpts2[i].pt[1])))
-    kpts1_np = np.array(kpts1_np)
-    kpts2_np = np.array(kpts2_np)
-    F0, mask_cv2 = cv2.findFundamentalMat(kpts1_np,kpts2_np, cv2.FM_7POINT)  
-    print(F0.shape)
+    # get initial estimate(without initial estimate lev marquardt may fail)
+    F = seven_point(kpts1[:7], kpts2[:7])
+    F0 = np.ravel(F[:3,:3])
 
-    F0 = np.ravel(F0[:3,:3])
-    print(F0)
     res = least_squares(lambda x: cost(x), F0)
 
-    print(res)
+    F_levmarq = np.array(res.x).reshape(3,3)
+    # print(f"F_levmarq : {F_levmarq}")
+
+    return F_levmarq
 
 
