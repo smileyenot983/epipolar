@@ -9,6 +9,16 @@ Implementation of several algorithms of epipolar geometry in python. The main pu
 
 * RANSAC - simplest RANSAC
 
+## To be implemented
+
+* Normalized 8point + 7point
+
+* Essential matrix estimation 
+
+* Essential matrix decomposition
+
+* Probably will continue with implementing further steps of sparse reconstruction(2-view triangulation, P3P, bundle adjustment)
+
 ## Dependencies
 
 numpy, scipy, matplotlib, openCV(for feature detection+matching and comparison purposes)
