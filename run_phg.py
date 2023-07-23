@@ -10,6 +10,7 @@ from feature_matcher import FeatureMatcher
 # from fundamental import seven_point
 # from fundamental import levmarq
 # from fundamental import calc_err_total
+from essential import FivePoint
 
 from ransac import Ransac
 
@@ -57,6 +58,9 @@ if __name__ == "__main__":
     kpts1_np = np.array(kpts1_np)
     kpts2_np = np.array(kpts2_np)
 
+    fivePoint = FivePoint()
+    fivePoint.estimate(kpts1_np[:5,:], kpts2_np[:5,:]) 
+
     # f8 = eight_point(kpts1_np[:8,:], kpts2_np[:8,:])
     # err = calc_err_total(kpts1_np,kpts2_np, f8)
     # err_mean = err / kpts1_np.shape[0]
@@ -84,19 +88,19 @@ if __name__ == "__main__":
     # print(f"f7 : {f7}")
     # print(f"f_levmarq : {f_levmarq}")
 
-    eightPoint = EightPoint()
-    ransac = Ransac(eightPoint)
-    ratio, F = ransac.run(kpts1_np, kpts2_np)
-    err_total = calc_err_total(kpts1_np, kpts2_np, F)
-    err_mean = err_total/kpts1_np.shape[0]
-    print(f"EightPoint| inlier_ratio: {ratio} | err_total: {err_total} | err_mean: {err_mean}")
+    # eightPoint = EightPoint()
+    # ransac = Ransac(eightPoint)
+    # ratio, F = ransac.run(kpts1_np, kpts2_np)
+    # err_total = calc_err_total(kpts1_np, kpts2_np, F)
+    # err_mean = err_total/kpts1_np.shape[0]
+    # print(f"EightPoint| inlier_ratio: {ratio} | err_total: {err_total} | err_mean: {err_mean}")
 
-    sevenPoint = SevenPoint()
-    ransac = Ransac(sevenPoint)
-    ratio, F = ransac.run(kpts1_np, kpts2_np)
-    err_total = calc_err_total(kpts1_np, kpts2_np, F)
-    err_mean = err_total/kpts1_np.shape[0]
-    print(f"SevenPoint| inlier_ratio: {ratio} | err_total: {err_total} | err_mean: {err_mean}")
+    # sevenPoint = SevenPoint()
+    # ransac = Ransac(sevenPoint)
+    # ratio, F = ransac.run(kpts1_np, kpts2_np)
+    # err_total = calc_err_total(kpts1_np, kpts2_np, F)
+    # err_mean = err_total/kpts1_np.shape[0]
+    # print(f"SevenPoint| inlier_ratio: {ratio} | err_total: {err_total} | err_mean: {err_mean}")
 
     # print(f"F_ransac: {F_ransac}")
 

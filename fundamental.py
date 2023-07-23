@@ -108,62 +108,62 @@ class SevenPoint(Fundamental):
             A[i][7] = kpts1[i][1]
             A[i][8] = 1.0
 
-            u,s,vt = np.linalg.svd(A, full_matrices=True)
+        u,s,vt = np.linalg.svd(A, full_matrices=True)
 
-            # 2 vecs in nullspace
-            null_vec1 = vt.T[:,8]
-            null_vec2 = vt.T[:,7]
+        # 2 vecs in nullspace
+        null_vec1 = vt.T[:,8]
+        null_vec2 = vt.T[:,7]
 
-            null_mat1 = null_vec1.reshape((3,3))
-            null_mat2 = null_vec2.reshape((3,3))
+        null_mat1 = null_vec1.reshape((3,3))
+        null_mat2 = null_vec2.reshape((3,3))
 
-            # creating variables, to make code more readable
-            a = null_mat1[0,0]
-            b = null_mat1[0,1]
-            c = null_mat1[0,2]
-            d = null_mat1[1,0]
-            e = null_mat1[1,1]
-            f = null_mat1[1,2]
-            g = null_mat1[2,0]
-            h = null_mat1[2,1]
-            i = null_mat1[2,2]
+        # creating variables, to make code more readable
+        a = null_mat1[0,0]
+        b = null_mat1[0,1]
+        c = null_mat1[0,2]
+        d = null_mat1[1,0]
+        e = null_mat1[1,1]
+        f = null_mat1[1,2]
+        g = null_mat1[2,0]
+        h = null_mat1[2,1]
+        i = null_mat1[2,2]
 
-            j = null_mat2[0,0]
-            k = null_mat2[0,1]
-            l = null_mat2[0,2]
-            m = null_mat2[1,0]
-            n = null_mat2[1,1]
-            o = null_mat2[1,2]
-            p = null_mat2[2,0]
-            q = null_mat2[2,1]
-            r = null_mat2[2,2]
+        j = null_mat2[0,0]
+        k = null_mat2[0,1]
+        l = null_mat2[0,2]
+        m = null_mat2[1,0]
+        n = null_mat2[1,1]
+        o = null_mat2[1,2]
+        p = null_mat2[2,0]
+        q = null_mat2[2,1]
+        r = null_mat2[2,2]
 
-            # here write the result of  constrant = det(f_1 + \lambda*f_2)=0 -> as a result there is a cubic polynomial
-            coeffs =[
-                a*e*i + b*f*g + c*d*h - a*f*h - b*d*i - c*e*g,
-                a*e*r + a*i*n + b*f*p + b*g*o + c*d*q + c*h*m + d*h*l + e*i*j + f*g*k - 
-                a*f*q - a*h*o - b*d*r - b*i*m - c*e*p - c*g*n - d*i*k - e*g*l - f*h*j,
-                a*n*r + b*o*p + c*m*q + d*l*q + e*j*r + f*k*p + g*k*o + h*l*m + i*j*n - 
-                a*o*q - b*m*r - c*n*p - d*k*r - e*l*p - f*j*q - g*l*n - h*j*o - i*k*m,
-                j*n*r + k*o*p + l*m*q - j*o*q - k*m*r - l*n*p
-            ]
+        # here write the result of  constrant = det(f_1 + \lambda*f_2)=0 -> as a result there is a cubic polynomial
+        coeffs =[
+            a*e*i + b*f*g + c*d*h - a*f*h - b*d*i - c*e*g,
+            a*e*r + a*i*n + b*f*p + b*g*o + c*d*q + c*h*m + d*h*l + e*i*j + f*g*k - 
+            a*f*q - a*h*o - b*d*r - b*i*m - c*e*p - c*g*n - d*i*k - e*g*l - f*h*j,
+            a*n*r + b*o*p + c*m*q + d*l*q + e*j*r + f*k*p + g*k*o + h*l*m + i*j*n - 
+            a*o*q - b*m*r - c*n*p - d*k*r - e*l*p - f*j*q - g*l*n - h*j*o - i*k*m,
+            j*n*r + k*o*p + l*m*q - j*o*q - k*m*r - l*n*p
+        ]
 
-            # finding roots of polynomial  A*x^3 + B*x^2 + C*x + D
-            # cubic polynomial -> 1 or 3 solutions
-            roots = np.roots([coeffs[3],coeffs[2],coeffs[1],coeffs[0]])
+        # finding roots of polynomial  A*x^3 + B*x^2 + C*x + D
+        # cubic polynomial -> 1 or 3 solutions
+        roots = np.roots([coeffs[3],coeffs[2],coeffs[1],coeffs[0]])
 
-            # in order to choose best root we calc error and choose solution which minimizes this error
-            fundamental_best = None
-            err_best = None
-            for root in roots:
-                fundamental_i = null_mat1 + root * null_mat2
-                err_i = self.calc_err_total(kpts1,kpts2,fundamental_i)
+        # in order to choose best root we calc error and choose solution which minimizes this error
+        fundamental_best = None
+        err_best = None
+        for root in roots:
+            fundamental_i = null_mat1 + root * null_mat2
+            err_i = self.calc_err_total(kpts1,kpts2,fundamental_i)
 
-                if(err_best is None or err_i < err_best):
-                    err_best = err_i
-                    fundamental_best = fundamental_i
+            if(err_best is None or err_i < err_best):
+                err_best = err_i
+                fundamental_best = fundamental_i
 
-            return fundamental_best
+        return fundamental_best
 
 
 class LevMarq(Fundamental):
